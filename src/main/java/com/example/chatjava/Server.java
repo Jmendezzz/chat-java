@@ -1,40 +1,42 @@
 package com.example.chatjava;
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import com.example.chatjava.model.Customer;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class Server extends Application {
-    @Override
-    public void start(Stage stage) throws Exception {
-        FXMLLoader fxmlLoader = new FXMLLoader(Cliente.class.getResource("servidor.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 1200, 600);
-        stage.setTitle("Hello!");
-        stage.setScene(scene);
-        stage.show();
 
-        System.out.println("Esperando clientes!");
-        try {
-            ServerSocket server = new ServerSocket(9806);
-            Socket socket = server.accept();//bloqueante
-            System.out.println("Nos conectamos!");
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String message = in.readLine();
-            PrintWriter print = new PrintWriter(socket.getOutputStream(), true);
-            System.out.println(message);
-        } catch (IOException err) {
-            System.out.println(err.getMessage());
-            throw new RuntimeException();
-        }
+public class Server {
+    public static ServerSocket server;
 
+
+    public static void main(String[] args) {
+
+
+            try{
+                server = new ServerSocket(5050);
+
+                while  (true){
+                    System.out.println("Esperando conexion");
+                    Socket socket = server.accept();
+                    System.out.println("Usuario conectado: "+socket.getLocalAddress());
+                    DataInputStream flujoEntrada = new DataInputStream(socket.getInputStream());
+                    DataOutputStream flujoSalida = new DataOutputStream(socket.getOutputStream());
+                    String name = flujoEntrada.readUTF();
+                    String message = name + " Se ha unido al chat";
+                    System.out.println(message);
+
+                    Customer customer = new Customer(name,socket,flujoSalida,flujoEntrada);
+                    Thread thread = new Thread(customer::waitingForMessages);
+                    thread.start(); //Ejecuto el hilo por cada customer que se va agregando para que este a la espera de nuevos mensajes.
+                }
+
+            }catch (IOException e){
+                System.out.println("No se pudo crear el server");
+            }
 
     }
+
 }
